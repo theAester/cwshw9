@@ -1,8 +1,33 @@
 <?php
-$question = 'این یک پرسش نمونه است';
-$msg = 'این یک پاسخ نمونه است';
-$en_name = 'hafez';
-$fa_name = 'حافظ';
+function myhash($s,$count){
+	$len = strlen($s);
+	$n = 0;
+	for($i=0;$i<$len;$i++){
+		$n = ($n+ord($s{$i})*ord($s{$i}))%$count;
+	}
+	return $n;
+}
+function check($s){
+	if(strlen($s) < 6) return false;
+	return substr($s,0,6) == 'آیا' && ( substr($s,-2) == '؟' || $s{strlen($s)-1} == '?' );
+}
+$msgs = explode(PHP_EOL,file_get_contents('messages.txt'));
+$M_COUNT = count($msgs);
+$person_data = file_get_contents('people.json');
+$pa = (array)json_decode($person_data);
+$pk = array_keys($pa);
+$P_COUNT = count($pa);
+$en_name = $pk[rand(0,$P_COUNT-1)];
+$msg = "سوال خود را بپرس!";
+$question = "";
+if(isset($_POST['question'])){
+	$question = $_POST['question'];
+	$en_name = $_POST['person'];
+	$msg = $msgs[myhash($question.$en_name,$M_COUNT)];
+	if(!check($question))
+		$msg = "سوال درستی پرسیده نشده!";
+}
+$fa_name = $pa[$en_name];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,10 +39,16 @@ $fa_name = 'حافظ';
 <body>
 <p id="copyright">تهیه شده برای درس کارگاه کامپیوتر،دانشکده کامییوتر، دانشگاه صنعتی شریف</p>
 <div id="wrapper">
+	<?php
+	if(isset($_POST['question'])){
+	?>
     <div id="title">
         <span id="label">پرسش:</span>
         <span id="question"><?php echo $question ?></span>
     </div>
+	<?php
+	}
+	?>
     <div id="container">
         <div id="message">
             <p><?php echo $msg ?></p>
@@ -34,14 +65,15 @@ $fa_name = 'حافظ';
             سوال
             <input type="text" name="question" value="<?php echo $question ?>" maxlength="150" placeholder="..."/>
             را از
-            <select name="person">
+	    <select name="person" value="<?php echo $en_name; ?>">
                 <?php
-                /*
-                 * Loop over people data and
-                 * enter data inside `option` tag.
-                 * E.g., <option value="hafez">حافظ</option>
-                 */
-                ?>
+		foreach($pa as $key => $val){
+			if($key == $en_name)
+				echo "<option value=\"$key\" selected>$val</option>\n";
+			else
+				echo "<option value=\"$key\">$val</option>\n";
+		}
+		?>
             </select>
             <input type="submit" value="بپرس"/>
         </form>
